@@ -1,0 +1,31 @@
+{
+  "models": [
+    {
+      "id": 1,
+      "name": "ChatGPT-3.5",
+      "model": "gpt-3.5-turbo",
+      "temperature": 0.7,
+      "max_tokens": 2000,
+      "created_at": "2024-02-20T10:00:00",
+      "updated_at": "2024-02-20T10:00:00"
+    },
+    {
+      "id": 2,
+      "name": "ChatGPT-4",
+      "model": "gpt-4",
+      "temperature": 0.7,
+      "max_tokens": 4000,
+      "created_at": "2024-02-20T10:00:00",
+      "updated_at": "2024-02-20T10:00:00"
+    },
+    {
+      "id": 3,
+      "name": "文心一言",
+      "model": "ERNIE-4.0",
+      "temperature": 0.7,
+      "max_tokens": 2000,
+      "created_at": "2024-02-20T10:00:00",
+      "updated_at": "2024-02-20T10:00:00"
+    }
+  ]
+}
