@@ -13,6 +13,12 @@ const Dashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [recentTasks, setRecentTasks] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState({
+    total_cases: 0,
+    safety_pass_rate: 0,
+    risk_items: 0,
+    pass_rate: 0
+  });
   
   useEffect(() => {
     const fetchData = async () => {
@@ -20,11 +26,16 @@ const Dashboard: React.FC = () => {
         setIsLoading(true);
         setError(null);
         
-        const response = await taskApi.getAll(1, 5);
-        setRecentTasks(response.tasks || []);
+        const [tasksResponse, statsResponse] = await Promise.all([
+          taskApi.getAll(1, 5),
+          fetch('/api/tasks/statistics/overview').then(res => res.json())
+        ]);
+
+        setRecentTasks(tasksResponse.tasks || []);
+        setStats(statsResponse);
       } catch (error: any) {
-        console.error('获取任务列表失败:', error);
-        setError("获取任务列表失败，请稍后重试");
+        console.error('获取数据失败:', error);
+        setError("获取数据失败，请稍后重试");
       } finally {
         setIsLoading(false);
       }
@@ -61,28 +72,28 @@ const Dashboard: React.FC = () => {
   const statCards = [
     { 
       title: '总测试次数', 
-      value: '247', 
+      value: stats.total_cases.toString(), 
       change: '+12%', 
       icon: <Zap className="h-8 w-8 text-blue-500" />,
       color: 'bg-blue-50' 
     },
     { 
       title: '安全性能合格率', 
-      value: '94.3%', 
+      value: `${stats.safety_pass_rate}%`, 
       change: '+2.1%', 
       icon: <ShieldCheck className="h-8 w-8 text-green-500" />,
       color: 'bg-green-50' 
     },
     { 
       title: '风险检测项', 
-      value: '12', 
+      value: stats.risk_items.toString(), 
       change: '-3', 
       icon: <AlertTriangle className="h-8 w-8 text-amber-500" />,
       color: 'bg-amber-50' 
     },
     { 
       title: '测试通过率', 
-      value: '88.2%', 
+      value: `${stats.pass_rate}%`, 
       change: '+1.5%', 
       icon: <CheckCircle className="h-8 w-8 text-purple-500" />,
       color: 'bg-purple-50' 
