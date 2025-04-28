@@ -5,7 +5,6 @@ import { Card, CardHeader, CardContent, CardFooter, CardTitle } from '../../comp
 import Button from '../../components/ui/Button';
 import TextArea from '../../components/ui/TextArea';
 import Select, { SelectOption } from '../../components/ui/Select';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/Table';
 import { modelConfigApi, testCaseApi, evaluationApi } from '../../services/api';
 import { ModelConfig, TestCase, EvaluationResponse } from '../../types';
 import toast from 'react-hot-toast';
@@ -34,24 +33,27 @@ const Evaluation: React.FC = () => {
           testCaseApi.getAll()
         ]);
         
-        setModels(modelsData);
-        setTestCases(testCasesData);
+        setModels(Array.isArray(modelsData) ? modelsData : []);
+        setTestCases(Array.isArray(testCasesData) ? testCasesData : []);
         
         // If there are models, select the first one by default
-        if (modelsData.length > 0) {
+        if (Array.isArray(modelsData) && modelsData.length > 0) {
           setSelectedModels([modelsData[0].id]);
         }
         
         // If testCaseId was provided and exists, select it
-        if (testCaseId) {
+        if (testCaseId && Array.isArray(testCasesData)) {
           const testCase = testCasesData.find(tc => tc.id === Number(testCaseId));
           if (testCase) {
             setSelectedTestCase(Number(testCaseId));
+            setCustomPrompt(testCase.content);
           }
         }
       } catch (error) {
         toast.error('加载数据失败');
         console.error('Error loading data:', error);
+        setModels([]);
+        setTestCases([]);
       } finally {
         setIsLoadingData(false);
       }
@@ -102,11 +104,12 @@ const Evaluation: React.FC = () => {
       };
       
       const data = await evaluationApi.evaluateWithTestCase(params);
-      setResults(data);
+      setResults(Array.isArray(data) ? data : []);
       toast.success('评估完成');
     } catch (error) {
       toast.error('模型评估失败');
       console.error('Evaluation error:', error);
+      setResults([]);
     } finally {
       setIsLoading(false);
     }
