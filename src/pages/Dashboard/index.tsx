@@ -13,6 +13,7 @@ const Dashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [recentTasks, setRecentTasks] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [usingMockData, setUsingMockData] = useState(false);
   
   // 模拟任务数据
   const mockTasks = [
@@ -39,15 +40,38 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setIsLoading(true);
+        setError(null);
+        setUsingMockData(false);
+        
+        // 设置请求超时
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
         // 尝试从API获取数据
         const tasks = await taskApi.getAll(1, 5);
-        setRecentTasks(tasks.data || []);
-        setError(null);
-      } catch (error) {
-        console.error('Error fetching dashboard data', error);
-        // 如果API调用失败，使用模拟数据
+        clearTimeout(timeoutId);
+        
+        if (tasks.data) {
+          setRecentTasks(tasks.data);
+        } else {
+          throw new Error('未收到有效数据');
+        }
+      } catch (error: any) {
+        console.warn('后端服务暂时不可用，切换到模拟数据', error);
         setRecentTasks(mockTasks);
-        setError("无法连接到服务器，显示模拟数据");
+        setUsingMockData(true);
+        
+        // 根据错误类型设置不同的提示信息
+        if (error.name === 'AbortError') {
+          setError("服务器响应超时，已切换到演示模式");
+        } else if (error.response?.status === 500) {
+          setError("服务器内部错误，已切换到演示模式");
+        } else if (error.message.includes('ECONNREFUSED')) {
+          setError("无法连接到服务器，已切换到演示模式");
+        } else {
+          setError("服务暂时不可用，已切换到演示模式");
+        }
       } finally {
         setIsLoading(false);
       }
@@ -118,8 +142,16 @@ const Dashboard: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">仪表盘</h1>
         <p className="mt-1 text-gray-500">监控模型安全性能和测试状态</p>
         {error && (
-          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
-            <p className="text-sm text-yellow-700">{error}</p>
+          <div className="mt-2 p-4 bg-yellow-50 border border-yellow-200 rounded-md flex items-start space-x-3">
+            <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+            <div>
+              <p className="text-sm text-yellow-700">{error}</p>
+              {usingMockData && (
+                <p className="text-xs text-yellow-600 mt-1">
+                  当前显示的是模拟数据，仅用于演示目的。请检查后端服务状态或联系系统管理员。
+                </p>
+              )}
+            </div>
           </div>
         )}
       </div>
