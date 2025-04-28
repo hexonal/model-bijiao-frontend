@@ -1,6 +1,5 @@
 import axios from 'axios';
-import { ModelConfig, TestCase, EvaluationResponse, TestTask, TestReport, PaginatedResponse, TestCategory, TestType } from '../types';
-import mockTestCases from '../mock/testCases.json';
+import { ModelConfig, TestCase, EvaluationResponse, TestTask, TestReport, PaginatedResponse } from '../types';
 
 // 创建 axios 实例
 const api = axios.create({
@@ -45,12 +44,8 @@ export const modelConfigApi = {
 
 // 测试用例 API
 export const testCaseApi = {
-  getAll: async (category?: string, type?: string): Promise<TestCase[]> => {
-    const params = new URLSearchParams();
-    if (category) params.append('category', category);
-    if (type) params.append('type', type);
-    
-    const response = await api.get(`/test-cases?${params.toString()}`);
+  getAll: async (page = 1, size = 10): Promise<PaginatedResponse<TestCase>> => {
+    const response = await api.get(`/test-cases?page=${page}&size=${size}`);
     return response.data;
   },
   
@@ -72,27 +67,6 @@ export const testCaseApi = {
   delete: async (id: number): Promise<{ message: string }> => {
     const response = await api.delete(`/test-cases/${id}`);
     return response.data;
-  },
-  
-  getByCategory: async (category: string): Promise<TestCase[]> => {
-    const response = await api.get(`/test-cases/categories/${category}`);
-    return response.data;
-  },
-  
-  getCategories: async (): Promise<TestCategory[]> => {
-    const response = await api.get('/test/categories');
-    return response.data;
-  },
-
-  getTestTypes: async (category: string): Promise<string[]> => {
-    try {
-      const response = await api.get(`/test/types/${category}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching test types:', error);
-      // 如果API调用失败，使用mock数据
-      return mockTestCases.testTypes[category as keyof typeof mockTestCases.testTypes] || [];
-    }
   }
 };
 

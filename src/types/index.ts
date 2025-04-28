@@ -9,21 +9,8 @@ export interface ModelConfig {
   updated_at: string;
 }
 
-export interface TestCategory {
-  key: string;
-  name: string;
-  description: string;
-}
-
-export interface TestType {
-  category: string;
-  types: string[];
-}
-
 export interface TestCase {
   id: number;
-  category: string;
-  type: string;
   name: string;
   content: string;
   expected_behavior: string;
