@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, BarChart2, Settings, Database, FileText, LayoutGrid } from 'lucide-react';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   
   const navigation = [
     { name: '仪表盘', path: '/', icon: <BarChart2 className="h-5 w-5" /> },
     { name: '模型管理', path: '/models', icon: <Database className="h-5 w-5" /> },
     { name: '测试用例', path: '/test-cases', icon: <FileText className="h-5 w-5" /> },
     { name: '评估测试', path: '/evaluation', icon: <LayoutGrid className="h-5 w-5" /> },
-    { name: '系统设置', path: '/settings', icon: <Settings className="h-5 w-5" /> },
+    { name: '系统设置', path: '/models', icon: <Settings className="h-5 w-5" /> },
   ];
   
   const toggleMenu = () => {
@@ -20,6 +21,11 @@ const Header: React.FC = () => {
 
   const isActive = (path: string) => {
     return location.pathname === path;
+  };
+
+  const handleNavigation = (path: string) => {
+    setIsMenuOpen(false);
+    navigate(path);
   };
 
   return (
@@ -34,9 +40,9 @@ const Header: React.FC = () => {
             {/* Desktop Navigation */}
             <nav className="hidden md:ml-6 md:flex md:space-x-4">
               {navigation.map((item) => (
-                <Link
+                <button
                   key={item.name}
-                  to={item.path}
+                  onClick={() => handleNavigation(item.path)}
                   className={`${
                     isActive(item.path)
                       ? 'bg-gray-100 text-blue-800'
@@ -45,7 +51,7 @@ const Header: React.FC = () => {
                 >
                   <span className="mr-2">{item.icon}</span>
                   {item.name}
-                </Link>
+                </button>
               ))}
             </nav>
           </div>
@@ -72,19 +78,18 @@ const Header: React.FC = () => {
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             {navigation.map((item) => (
-              <Link
+              <button
                 key={item.name}
-                to={item.path}
+                onClick={() => handleNavigation(item.path)}
                 className={`${
                   isActive(item.path)
                     ? 'bg-gray-100 text-blue-800'
                     : 'text-gray-700 hover:bg-gray-50 hover:text-blue-800'
-                } block px-3 py-2 rounded-md text-base font-medium flex items-center`}
-                onClick={() => setIsMenuOpen(false)}
+                } block px-3 py-2 rounded-md text-base font-medium flex items-center w-full`}
               >
                 <span className="mr-3">{item.icon}</span>
                 {item.name}
-              </Link>
+              </button>
             ))}
           </div>
         </div>

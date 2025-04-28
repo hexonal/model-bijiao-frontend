@@ -1,94 +1,65 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Play, Save, AlertTriangle } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-import TextArea from '../../components/ui/TextArea';
-import Select, { SelectOption } from '../../components/ui/Select';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/Table';
 import { modelConfigApi, testCaseApi, evaluationApi } from '../../services/api';
 import { ModelConfig, TestCase, EvaluationResponse } from '../../types';
 import toast from 'react-hot-toast';
 
 const Evaluation: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const testCaseId = searchParams.get('testCaseId');
-  
+  const navigate = useNavigate();
   const [models, setModels] = useState<ModelConfig[]>([]);
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [selectedModels, setSelectedModels] = useState<number[]>([]);
-  const [selectedTestCase, setSelectedTestCase] = useState<number | null>(testCaseId ? Number(testCaseId) : null);
-  const [customPrompt, setCustomPrompt] = useState('');
-  const [customSystemPrompt, setCustomSystemPrompt] = useState('');
+  const [selectedTestCases, setSelectedTestCases] = useState<number[]>([]);
   const [results, setResults] = useState<EvaluationResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [pagination, setPagination] = useState({ page: 1, size: 10, total: 0 });
   
-  // Load models and test cases
+  // 加载模型和测试用例
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoadingData(true);
         const [modelsData, testCasesData] = await Promise.all([
           modelConfigApi.getAll(),
-          testCaseApi.getAll()
+          testCaseApi.getAll(pagination.page, pagination.size)
         ]);
         
-        setModels(Array.isArray(modelsData) ? modelsData : []);
-        setTestCases(Array.isArray(testCasesData) ? testCasesData : []);
-        
-        // If there are models, select the first one by default
-        if (Array.isArray(modelsData) && modelsData.length > 0) {
-          setSelectedModels([modelsData[0].id]);
-        }
-        
-        // If testCaseId was provided and exists, select it
-        if (testCaseId && Array.isArray(testCasesData)) {
-          const testCase = testCasesData.find(tc => tc.id === Number(testCaseId));
-          if (testCase) {
-            setSelectedTestCase(Number(testCaseId));
-            setCustomPrompt(testCase.content);
-          }
-        }
+        setModels(modelsData || []);
+        setTestCases(testCasesData.testcases || []);
+        setPagination({
+          page: testCasesData.page,
+          size: testCasesData.size,
+          total: testCasesData.total
+        });
       } catch (error) {
         toast.error('加载数据失败');
         console.error('Error loading data:', error);
-        setModels([]);
-        setTestCases([]);
       } finally {
         setIsLoadingData(false);
       }
     };
     
     fetchData();
-  }, [testCaseId]);
-  
-  const handleModelChange = (selected: string[]) => {
-    setSelectedModels(selected.map(Number));
+  }, [pagination.page]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > Math.ceil(pagination.total / pagination.size)) return;
+    setPagination(prev => ({ ...prev, page: newPage }));
   };
-  
-  const handleTestCaseChange = (value: string) => {
-    const id = Number(value);
-    setSelectedTestCase(id);
-    
-    // Auto-fill custom prompt with test case content if selected
-    if (id) {
-      const testCase = testCases.find(tc => tc.id === id);
-      if (testCase) {
-        setCustomPrompt(testCase.content);
-      }
-    } else {
-      setCustomPrompt('');
-    }
-  };
-  
+
   const handleEvaluate = async () => {
     if (selectedModels.length === 0) {
       toast.error('请选择至少一个模型');
       return;
     }
     
-    if (!selectedTestCase && !customPrompt) {
-      toast.error('请选择测试用例或输入自定义提示');
+    if (selectedTestCases.length === 0) {
+      toast.error('请选择至少一个测试用例');
       return;
     }
     
@@ -96,20 +67,22 @@ const Evaluation: React.FC = () => {
       setIsLoading(true);
       setResults([]);
       
-      const params = {
-        test_case_id: selectedTestCase || undefined,
-        model_ids: selectedModels,
-        custom_prompt: !selectedTestCase ? customPrompt : undefined,
-        custom_system_prompt: customSystemPrompt || undefined
-      };
+      const evaluationPromises = selectedTestCases.map(testCaseId => {
+        const testCase = testCases.find(tc => tc.id === testCaseId);
+        if (!testCase) return null;
+        
+        return evaluationApi.evaluateWithTestCase({
+          test_case_id: testCaseId,
+          model_ids: selectedModels
+        });
+      });
       
-      const data = await evaluationApi.evaluateWithTestCase(params);
-      setResults(Array.isArray(data) ? data : []);
+      const results = await Promise.all(evaluationPromises.filter(Boolean));
+      setResults(results.flat());
       toast.success('评估完成');
     } catch (error) {
       toast.error('模型评估失败');
       console.error('Evaluation error:', error);
-      setResults([]);
     } finally {
       setIsLoading(false);
     }
@@ -121,33 +94,17 @@ const Evaluation: React.FC = () => {
       return;
     }
     
-    // Create a JSON blob and download it
     const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    
     const a = document.createElement('a');
     a.href = url;
     a.download = `evaluation-results-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
-    
     URL.revokeObjectURL(url);
     toast.success('结果已保存');
   };
-  
-  // Create model selection options
-  const modelOptions: SelectOption[] = models.map(model => ({
-    value: model.id.toString(),
-    label: model.name
-  }));
-  
-  // Create test case selection options
-  const testCaseOptions: SelectOption[] = [
-    { value: '', label: '使用自定义提示' },
-    ...testCases.map(testCase => ({
-      value: testCase.id.toString(),
-      label: `${testCase.name} (${testCase.category})`
-    }))
-  ];
+
+  const totalPages = Math.ceil(pagination.total / pagination.size);
 
   return (
     <div className="space-y-6">
@@ -164,81 +121,146 @@ const Evaluation: React.FC = () => {
         <>
           <Card>
             <CardHeader>
-              <CardTitle>评估配置</CardTitle>
+              <CardTitle>选择测试模型</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">选择要测试的模型</h3>
-                <div className="space-y-2">
-                  {models.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {models.map(model => (
-                        <div key={model.id} className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id={`model-${model.id}`}
-                            checked={selectedModels.includes(model.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedModels(prev => [...prev, model.id]);
-                              } else {
-                                setSelectedModels(prev => prev.filter(id => id !== model.id));
-                              }
-                            }}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          />
-                          <label htmlFor={`model-${model.id}`} className="ml-2 block text-sm text-gray-900">
-                            {model.name} ({model.model})
-                          </label>
-                        </div>
+            <CardContent>
+              {models.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-4">
+                    {models.map(model => (
+                      <div key={model.id} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id={`model-${model.id}`}
+                          checked={selectedModels.includes(model.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedModels(prev => [...prev, model.id]);
+                            } else {
+                              setSelectedModels(prev => prev.filter(id => id !== model.id));
+                            }
+                          }}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor={`model-${model.id}`} className="ml-2 block text-sm text-gray-900">
+                          {model.name}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between bg-yellow-50 p-4 rounded-lg">
+                  <div className="flex items-center">
+                    <AlertTriangle className="h-5 w-5 text-yellow-400 mr-3" />
+                    <p className="text-sm text-yellow-700">未找到可用的模型配置</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate('/models/new')}
+                  >
+                    添加模型
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>选择测试用例</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {testCases.length > 0 ? (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-16">选择</TableHead>
+                        <TableHead>提示词</TableHead>
+                        <TableHead>预期响应</TableHead>
+                        <TableHead>参数配置</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {testCases.map((testCase) => (
+                        <TableRow key={testCase.id}>
+                          <TableCell>
+                            <input
+                              type="checkbox"
+                              checked={selectedTestCases.includes(testCase.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedTestCases(prev => [...prev, testCase.id]);
+                                } else {
+                                  setSelectedTestCases(prev => prev.filter(id => id !== testCase.id));
+                                }
+                              }}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate">{testCase.prompt}</TableCell>
+                          <TableCell className="max-w-xs truncate">{testCase.expected_response}</TableCell>
+                          <TableCell>
+                            <div className="text-sm text-gray-500">
+                              <div>最大Token: {testCase.max_tokens}</div>
+                              <div>温度: {testCase.temperature}</div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </div>
-                  ) : (
-                    <div className="flex items-center text-amber-600">
-                      <AlertTriangle className="h-5 w-5 mr-2" />
-                      <p className="text-sm">未找到模型配置，请先添加模型</p>
+                    </TableBody>
+                  </Table>
+
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between mt-6">
+                      <div className="text-sm text-gray-500">
+                        显示 {pagination.page} / {totalPages} 页，共 {pagination.total} 条记录
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={pagination.page <= 1}
+                          onClick={() => handlePageChange(pagination.page - 1)}
+                        >
+                          上一页
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={pagination.page >= totalPages}
+                          onClick={() => handlePageChange(pagination.page + 1)}
+                        >
+                          下一页
+                        </Button>
+                      </div>
                     </div>
                   )}
+                </>
+              ) : (
+                <div className="flex items-center justify-between bg-yellow-50 p-4 rounded-lg">
+                  <div className="flex items-center">
+                    <AlertTriangle className="h-5 w-5 text-yellow-400 mr-3" />
+                    <p className="text-sm text-yellow-700">未找到可用的测试用例</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate('/test-cases/new')}
+                  >
+                    添加测试用例
+                  </Button>
                 </div>
-              </div>
-              
-              <div className="border-t border-gray-200 pt-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">测试内容</h3>
-                <Select
-                  label="选择测试用例"
-                  options={testCaseOptions}
-                  value={selectedTestCase ? selectedTestCase.toString() : ''}
-                  onChange={handleTestCaseChange}
-                  className="mb-4"
-                />
-                
-                {!selectedTestCase && (
-                  <TextArea
-                    label="自定义提示"
-                    placeholder="输入要发送给模型的文本..."
-                    value={customPrompt}
-                    onChange={(e) => setCustomPrompt(e.target.value)}
-                    rows={5}
-                    className="mb-4"
-                  />
-                )}
-                
-                <TextArea
-                  label="系统提示（可选）"
-                  placeholder="输入系统角色设定..."
-                  value={customSystemPrompt}
-                  onChange={(e) => setCustomSystemPrompt(e.target.value)}
-                  rows={3}
-                  helperText="定义模型的行为指导，例如：'你是一个负责任的AI助手'"
-                />
-              </div>
+              )}
             </CardContent>
-            <CardFooter className="flex justify-end">
+            <CardFooter className="flex justify-end space-x-4">
               <Button
                 leftIcon={<Play className="h-4 w-4" />}
                 onClick={handleEvaluate}
                 isLoading={isLoading}
-                disabled={isLoading || selectedModels.length === 0 || (!selectedTestCase && !customPrompt)}
+                disabled={isLoading || selectedModels.length === 0 || selectedTestCases.length === 0}
               >
                 开始评估
               </Button>
