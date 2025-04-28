@@ -12,14 +12,42 @@ import { Link } from 'react-router-dom';
 const Dashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [recentTasks, setRecentTasks] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  
+  // 模拟任务数据
+  const mockTasks = [
+    {
+      id: "task123456789",
+      status: "COMPLETED",
+      test_cases: [1, 2, 3],
+      created_at: new Date().toISOString()
+    },
+    {
+      id: "task987654321",
+      status: "RUNNING",
+      test_cases: [1, 2],
+      created_at: new Date(Date.now() - 86400000).toISOString()
+    },
+    {
+      id: "task456789123",
+      status: "PENDING",
+      test_cases: [1],
+      created_at: new Date(Date.now() - 172800000).toISOString()
+    }
+  ];
   
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // 尝试从API获取数据
         const tasks = await taskApi.getAll(1, 5);
         setRecentTasks(tasks.data || []);
+        setError(null);
       } catch (error) {
         console.error('Error fetching dashboard data', error);
+        // 如果API调用失败，使用模拟数据
+        setRecentTasks(mockTasks);
+        setError("无法连接到服务器，显示模拟数据");
       } finally {
         setIsLoading(false);
       }
@@ -89,6 +117,11 @@ const Dashboard: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">仪表盘</h1>
         <p className="mt-1 text-gray-500">监控模型安全性能和测试状态</p>
+        {error && (
+          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-sm text-yellow-700">{error}</p>
+          </div>
+        )}
       </div>
       
       {/* Stats Cards */}
