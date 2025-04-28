@@ -92,7 +92,6 @@ const ModelList: React.FC = () => {
                   <TableHead>模型标识</TableHead>
                   <TableHead>温度</TableHead>
                   <TableHead>最大Token</TableHead>
-                  <TableHead>创建时间</TableHead>
                   <TableHead>操作</TableHead>
                 </TableRow>
               </TableHeader>
@@ -104,7 +103,6 @@ const ModelList: React.FC = () => {
                     <TableCell>{model.model}</TableCell>
                     <TableCell>{model.temperature}</TableCell>
                     <TableCell>{model.max_tokens}</TableCell>
-                    <TableCell>{new Date(model.created_at).toLocaleString('zh-CN')}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button
