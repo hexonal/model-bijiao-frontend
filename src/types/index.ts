@@ -15,6 +15,11 @@ export interface TestCategory {
   description: string;
 }
 
+export interface TestType {
+  category: string;
+  types: string[];
+}
+
 export interface TestCase {
   id: number;
   category: string;

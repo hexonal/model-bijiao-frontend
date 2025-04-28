@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { ModelConfig, TestCase, EvaluationResponse, TestTask, TestReport, PaginatedResponse, TestCategory } from '../types';
+import { ModelConfig, TestCase, EvaluationResponse, TestTask, TestReport, PaginatedResponse, TestCategory, TestType } from '../types';
+import mockTestCases from '../mock/testCases.json';
 
 // 创建 axios 实例
 const api = axios.create({
@@ -81,6 +82,17 @@ export const testCaseApi = {
   getCategories: async (): Promise<TestCategory[]> => {
     const response = await api.get('/test/categories');
     return response.data;
+  },
+
+  getTestTypes: async (category: string): Promise<string[]> => {
+    try {
+      const response = await api.get(`/test/types/${category}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching test types:', error);
+      // 如果API调用失败，使用mock数据
+      return mockTestCases.testTypes[category as keyof typeof mockTestCases.testTypes] || [];
+    }
   }
 };
 

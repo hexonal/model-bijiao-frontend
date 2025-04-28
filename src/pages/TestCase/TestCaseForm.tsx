@@ -85,18 +85,17 @@ const TestCaseForm: React.FC = () => {
 
   useEffect(() => {
     if (selectedCategory) {
-      const fetchTypesForCategory = async () => {
+      const fetchTestTypes = async () => {
         try {
-          const testCases = await testCaseApi.getByCategory(selectedCategory);
-          const types = Array.from(new Set((Array.isArray(testCases) ? testCases : []).map(tc => tc.type)));
-          setTestTypes(types);
+          const types = await testCaseApi.getTestTypes(selectedCategory);
+          setTestTypes(Array.isArray(types) ? types : []);
         } catch (error) {
           console.error('Error fetching test types:', error);
           setTestTypes([]);
         }
       };
       
-      fetchTypesForCategory();
+      fetchTestTypes();
     } else {
       setTestTypes([]);
     }
@@ -163,7 +162,7 @@ const TestCaseForm: React.FC = () => {
                 label="测试类别"
                 options={[
                   { value: '', label: '选择测试类别' },
-                  ...(categories || []).map(cat => ({ value: cat.key, label: cat.name }))
+                  ...categories.map(cat => ({ value: cat.key, label: cat.name }))
                 ]}
                 helperText="选择测试用例的类别"
                 error={errors.category?.message}
@@ -174,7 +173,7 @@ const TestCaseForm: React.FC = () => {
                 label="测试类型"
                 options={[
                   { value: '', label: '选择测试类型' },
-                  ...(testTypes || []).map(type => ({ value: type, label: type }))
+                  ...testTypes.map(type => ({ value: type, label: type }))
                 ]}
                 helperText="选择测试类型"
                 error={errors.type?.message}
