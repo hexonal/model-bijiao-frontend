@@ -8,12 +8,12 @@ import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import Badge from '../../components/ui/Badge';
 import { testCaseApi } from '../../services/api';
-import { TestCase } from '../../types';
+import { TestCase, TestCategory } from '../../types';
 import toast from 'react-hot-toast';
 
 const TestCaseList: React.FC = () => {
   const [testCases, setTestCases] = useState<TestCase[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<TestCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState({ category: '', type: '', search: '' });
 
@@ -40,7 +40,7 @@ const TestCaseList: React.FC = () => {
     } catch (error) {
       toast.error('获取测试用例失败');
       console.error('Error fetching test cases:', error);
-      setTestCases([]); // 确保在错误时设置为空数组
+      setTestCases([]);
     } finally {
       setIsLoading(false);
     }
@@ -89,6 +89,12 @@ const TestCaseList: React.FC = () => {
   // 获取唯一的测试类型
   const testTypes = Array.from(new Set(testCases.map(tc => tc.type)));
 
+  // 获取类别名称的辅助函数
+  const getCategoryName = (categoryKey: string) => {
+    const category = categories.find(cat => cat.key === categoryKey);
+    return category ? category.name : categoryKey;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -119,7 +125,7 @@ const TestCaseList: React.FC = () => {
               label="测试类别"
               options={[
                 { value: '', label: '全部类别' },
-                ...categories.map(cat => ({ value: cat, label: cat }))
+                ...categories.map(cat => ({ value: cat.key, label: cat.name }))
               ]}
               value={filter.category}
               onChange={(value) => setFilter(prev => ({ ...prev, category: value }))}
@@ -179,7 +185,7 @@ const TestCaseList: React.FC = () => {
                     <TableCell>{testCase.id}</TableCell>
                     <TableCell className="font-medium text-gray-900">{testCase.name}</TableCell>
                     <TableCell>
-                      <Badge variant="primary">{testCase.category}</Badge>
+                      <Badge variant="primary">{getCategoryName(testCase.category)}</Badge>
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary">{testCase.type}</Badge>

@@ -5,23 +5,29 @@ import { Card, CardHeader, CardContent, CardFooter, CardTitle } from '../../comp
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import { testCaseApi } from '../../services/api';
-import { TestCase } from '../../types';
+import { TestCase, TestCategory } from '../../types';
 import toast from 'react-hot-toast';
 
 const TestCaseView: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [testCase, setTestCase] = useState<TestCase | null>(null);
+  const [categories, setCategories] = useState<TestCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchTestCase = async () => {
+    const fetchData = async () => {
       if (!id) return;
       
       try {
         setIsLoading(true);
-        const data = await testCaseApi.getById(Number(id));
-        setTestCase(data);
+        const [testCaseData, categoriesData] = await Promise.all([
+          testCaseApi.getById(Number(id)),
+          testCaseApi.getCategories()
+        ]);
+        
+        setTestCase(testCaseData);
+        setCategories(Array.isArray(categoriesData) ? categoriesData : []);
       } catch (error) {
         toast.error('获取测试用例详情失败');
         console.error('Error fetching test case:', error);
@@ -31,8 +37,13 @@ const TestCaseView: React.FC = () => {
       }
     };
 
-    fetchTestCase();
+    fetchData();
   }, [id, navigate]);
+
+  const getCategoryName = (categoryKey: string) => {
+    const category = categories.find(cat => cat.key === categoryKey);
+    return category ? category.name : categoryKey;
+  };
 
   if (isLoading) {
     return (
@@ -86,7 +97,7 @@ const TestCaseView: React.FC = () => {
             <div>
               <h3 className="text-sm font-medium text-gray-500">测试类别</h3>
               <div className="mt-1">
-                <Badge variant="primary">{testCase.category}</Badge>
+                <Badge variant="primary">{getCategoryName(testCase.category)}</Badge>
               </div>
             </div>
             <div>
