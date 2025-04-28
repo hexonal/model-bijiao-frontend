@@ -18,7 +18,7 @@ const TestCaseList: React.FC = () => {
     try {
       setIsLoading(true);
       const response = await testCaseApi.getAll(page, pagination.size);
-      setTestCases(response.data);
+      setTestCases(response.testcases || []); // 修改这里以匹配后端返回的数据结构
       setPagination({
         page: response.page,
         size: response.size,
@@ -87,7 +87,7 @@ const TestCaseList: React.FC = () => {
                   <TableRow>
                     <TableHead>ID</TableHead>
                     <TableHead>名称</TableHead>
-                    <TableHead>创建时间</TableHead>
+                    <TableHead>提示词</TableHead>
                     <TableHead>操作</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -95,8 +95,12 @@ const TestCaseList: React.FC = () => {
                   {testCases.map((testCase) => (
                     <TableRow key={testCase.id}>
                       <TableCell>{testCase.id}</TableCell>
-                      <TableCell className="font-medium text-gray-900">{testCase.name}</TableCell>
-                      <TableCell>{new Date(testCase.created_at).toLocaleString('zh-CN')}</TableCell>
+                      <TableCell className="font-medium text-gray-900">
+                        {testCase.prompt}
+                      </TableCell>
+                      <TableCell className="max-w-md truncate">
+                        {testCase.expected_response}
+                      </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
                           <Link to={`/test-cases/view/${testCase.id}`}>

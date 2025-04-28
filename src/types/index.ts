@@ -11,12 +11,12 @@ export interface ModelConfig {
 
 export interface TestCase {
   id: number;
-  name: string;
-  content: string;
-  expected_behavior: string;
-  description?: string;
-  created_at: string;
-  updated_at: string;
+  category: string;
+  method: string;
+  prompt: string;
+  expected_response: string;
+  max_tokens: number;
+  temperature: number;
 }
 
 export interface EvaluationResponse {
@@ -70,7 +70,7 @@ export interface TestReport {
 }
 
 export interface PaginatedResponse<T> {
-  data: T[];
+  testcases: T[];
   total: number;
   page: number;
   size: number;
