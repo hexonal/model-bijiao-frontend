@@ -22,11 +22,14 @@ const TestCaseList: React.FC = () => {
       setIsLoading(true);
       const data = await testCaseApi.getAll(filter.category || undefined, filter.type || undefined);
       
-      // Apply search filter client-side
-      let filteredData = data;
+      // 确保 data 是数组
+      const testCasesArray = Array.isArray(data) ? data : [];
+      
+      // 应用搜索过滤
+      let filteredData = testCasesArray;
       if (filter.search) {
         const searchTerm = filter.search.toLowerCase();
-        filteredData = data.filter((testCase) => 
+        filteredData = testCasesArray.filter((testCase) => 
           testCase.name.toLowerCase().includes(searchTerm) || 
           testCase.content.toLowerCase().includes(searchTerm) ||
           testCase.expected_behavior.toLowerCase().includes(searchTerm)
@@ -37,6 +40,7 @@ const TestCaseList: React.FC = () => {
     } catch (error) {
       toast.error('获取测试用例失败');
       console.error('Error fetching test cases:', error);
+      setTestCases([]); // 确保在错误时设置为空数组
     } finally {
       setIsLoading(false);
     }
@@ -45,9 +49,10 @@ const TestCaseList: React.FC = () => {
   const fetchCategories = async () => {
     try {
       const data = await testCaseApi.getCategories();
-      setCategories(data);
+      setCategories(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching categories:', error);
+      setCategories([]);
     }
   };
 
@@ -79,10 +84,9 @@ const TestCaseList: React.FC = () => {
 
   const resetFilters = () => {
     setFilter({ category: '', type: '', search: '' });
-    fetchTestCases();
   };
 
-  // Get unique test types
+  // 获取唯一的测试类型
   const testTypes = Array.from(new Set(testCases.map(tc => tc.type)));
 
   return (
