@@ -27,6 +27,7 @@ const TestCaseForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(isEditMode);
   const [categories, setCategories] = useState<string[]>([]);
+  const [testTypes, setTestTypes] = useState<string[]>([]);
   
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<TestCaseFormData>({
     defaultValues: {
@@ -41,16 +42,14 @@ const TestCaseForm: React.FC = () => {
 
   const selectedCategory = watch('category');
 
-  // Get existing test types based on category
-  const [testTypes, setTestTypes] = useState<string[]>([]);
-
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const data = await testCaseApi.getCategories();
-        setCategories(data);
+        setCategories(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Error fetching categories:', error);
+        setCategories([]);
       }
     };
 
@@ -86,14 +85,14 @@ const TestCaseForm: React.FC = () => {
 
   useEffect(() => {
     if (selectedCategory) {
-      // Fetch test cases from this category to extract available types
       const fetchTypesForCategory = async () => {
         try {
           const testCases = await testCaseApi.getByCategory(selectedCategory);
-          const types = Array.from(new Set(testCases.map(tc => tc.type)));
+          const types = Array.from(new Set((Array.isArray(testCases) ? testCases : []).map(tc => tc.type)));
           setTestTypes(types);
         } catch (error) {
           console.error('Error fetching test types:', error);
+          setTestTypes([]);
         }
       };
       
@@ -164,7 +163,7 @@ const TestCaseForm: React.FC = () => {
                 label="测试类别"
                 options={[
                   { value: '', label: '选择测试类别' },
-                  ...categories.map(cat => ({ value: cat, label: cat }))
+                  ...(categories || []).map(cat => ({ value: cat, label: cat }))
                 ]}
                 helperText="选择测试用例的类别"
                 error={errors.category?.message}
@@ -176,7 +175,7 @@ const TestCaseForm: React.FC = () => {
                   label="测试类型"
                   options={[
                     { value: '', label: '选择测试类型' },
-                    ...testTypes.map(type => ({ value: type, label: type })),
+                    ...(testTypes || []).map(type => ({ value: type, label: type })),
                     { value: '_new_', label: '+ 添加新类型' }
                   ]}
                   helperText="选择或添加新的测试类型"
