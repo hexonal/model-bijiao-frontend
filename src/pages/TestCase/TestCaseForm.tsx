@@ -170,26 +170,16 @@ const TestCaseForm: React.FC = () => {
                 {...register('category', { required: '请选择测试类别' })}
               />
               
-              <div>
-                <Select
-                  label="测试类型"
-                  options={[
-                    { value: '', label: '选择测试类型' },
-                    ...(testTypes || []).map(type => ({ value: type, label: type })),
-                    { value: '_new_', label: '+ 添加新类型' }
-                  ]}
-                  helperText="选择或添加新的测试类型"
-                  error={errors.type?.message}
-                  {...register('type', { required: '请选择或输入测试类型' })}
-                />
-                {watch('type') === '_new_' && (
-                  <Input 
-                    className="mt-2"
-                    placeholder="输入新的测试类型"
-                    {...register('type', { required: '请输入测试类型' })}
-                  />
-                )}
-              </div>
+              <Select
+                label="测试类型"
+                options={[
+                  { value: '', label: '选择测试类型' },
+                  ...(testTypes || []).map(type => ({ value: type, label: type }))
+                ]}
+                helperText="选择测试类型"
+                error={errors.type?.message}
+                {...register('type', { required: '请选择测试类型' })}
+              />
             </div>
             
             <Input
