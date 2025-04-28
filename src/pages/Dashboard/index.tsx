@@ -13,65 +13,18 @@ const Dashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [recentTasks, setRecentTasks] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [usingMockData, setUsingMockData] = useState(false);
-  
-  // 模拟任务数据
-  const mockTasks = [
-    {
-      id: "task123456789",
-      status: "COMPLETED",
-      test_cases: [1, 2, 3],
-      created_at: new Date().toISOString()
-    },
-    {
-      id: "task987654321",
-      status: "RUNNING",
-      test_cases: [1, 2],
-      created_at: new Date(Date.now() - 86400000).toISOString()
-    },
-    {
-      id: "task456789123",
-      status: "PENDING",
-      test_cases: [1],
-      created_at: new Date(Date.now() - 172800000).toISOString()
-    }
-  ];
   
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        setUsingMockData(false);
         
-        // 设置请求超时
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        
-        // 尝试从API获取数据
-        const tasks = await taskApi.getAll(1, 5);
-        clearTimeout(timeoutId);
-        
-        if (tasks.data) {
-          setRecentTasks(tasks.data);
-        } else {
-          throw new Error('未收到有效数据');
-        }
+        const response = await taskApi.getAll(1, 5);
+        setRecentTasks(response.tasks || []);
       } catch (error: any) {
-        console.warn('后端服务暂时不可用，切换到模拟数据', error);
-        setRecentTasks(mockTasks);
-        setUsingMockData(true);
-        
-        // 根据错误类型设置不同的提示信息
-        if (error.name === 'AbortError') {
-          setError("服务器响应超时，已切换到演示模式");
-        } else if (error.response?.status === 500) {
-          setError("服务器内部错误，已切换到演示模式");
-        } else if (error.message.includes('ECONNREFUSED')) {
-          setError("无法连接到服务器，已切换到演示模式");
-        } else {
-          setError("服务暂时不可用，已切换到演示模式");
-        }
+        console.error('获取任务列表失败:', error);
+        setError("获取任务列表失败，请稍后重试");
       } finally {
         setIsLoading(false);
       }
@@ -144,14 +97,7 @@ const Dashboard: React.FC = () => {
         {error && (
           <div className="mt-2 p-4 bg-yellow-50 border border-yellow-200 rounded-md flex items-start space-x-3">
             <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-            <div>
-              <p className="text-sm text-yellow-700">{error}</p>
-              {usingMockData && (
-                <p className="text-xs text-yellow-600 mt-1">
-                  当前显示的是模拟数据，仅用于演示目的。请检查后端服务状态或联系系统管理员。
-                </p>
-              )}
-            </div>
+            <p className="text-sm text-yellow-700">{error}</p>
           </div>
         )}
       </div>
