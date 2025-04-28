@@ -9,6 +9,12 @@ export interface ModelConfig {
   updated_at: string;
 }
 
+export interface TestCategory {
+  key: string;
+  name: string;
+  description: string;
+}
+
 export interface TestCase {
   id: number;
   category: string;

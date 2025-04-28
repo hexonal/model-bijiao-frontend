@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ModelConfig, TestCase, EvaluationResponse, TestTask, TestReport, PaginatedResponse } from '../types';
+import { ModelConfig, TestCase, EvaluationResponse, TestTask, TestReport, PaginatedResponse, TestCategory } from '../types';
 
 // 创建 axios 实例
 const api = axios.create({
@@ -78,9 +78,9 @@ export const testCaseApi = {
     return response.data;
   },
   
-  getCategories: async (): Promise<string[]> => {
+  getCategories: async (): Promise<TestCategory[]> => {
     const response = await api.get('/test/categories');
-    return response.data.categories;
+    return response.data;
   }
 };
 

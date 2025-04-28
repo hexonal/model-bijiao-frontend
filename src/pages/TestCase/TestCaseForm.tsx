@@ -7,7 +7,7 @@ import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import TextArea from '../../components/ui/TextArea';
 import { testCaseApi } from '../../services/api';
-import { TestCase } from '../../types';
+import { TestCase, TestCategory } from '../../types';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 
@@ -26,7 +26,7 @@ const TestCaseForm: React.FC = () => {
   const isEditMode = Boolean(id);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(isEditMode);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<TestCategory[]>([]);
   const [testTypes, setTestTypes] = useState<string[]>([]);
   
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<TestCaseFormData>({
@@ -163,7 +163,7 @@ const TestCaseForm: React.FC = () => {
                 label="测试类别"
                 options={[
                   { value: '', label: '选择测试类别' },
-                  ...(categories || []).map(cat => ({ value: cat, label: cat }))
+                  ...(categories || []).map(cat => ({ value: cat.key, label: cat.name }))
                 ]}
                 helperText="选择测试用例的类别"
                 error={errors.category?.message}
