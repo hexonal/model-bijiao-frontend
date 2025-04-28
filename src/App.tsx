@@ -13,6 +13,7 @@ import TestCaseForm from './pages/TestCase/TestCaseForm';
 import TestCaseView from './pages/TestCase/TestCaseView';
 import Evaluation from './pages/Evaluation';
 import TaskList from './pages/Task/TaskList';
+import Settings from './pages/Settings';
 
 function App() {
   return (
@@ -40,7 +41,7 @@ function App() {
           <Route path="tasks" element={<TaskList />} />
           
           {/* Settings */}
-          <Route path="settings" element={<ModelList />} />
+          <Route path="settings" element={<Settings />} />
           
           {/* Fallback route */}
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -50,4 +51,4 @@ function App() {
   );
 }
 
-export default App;
+export default App

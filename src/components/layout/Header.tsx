@@ -12,7 +12,7 @@ const Header: React.FC = () => {
     { name: '模型管理', path: '/models', icon: <Database className="h-5 w-5" /> },
     { name: '测试用例', path: '/test-cases', icon: <FileText className="h-5 w-5" /> },
     { name: '评估测试', path: '/evaluation', icon: <LayoutGrid className="h-5 w-5" /> },
-    { name: '系统设置', path: '/settings', icon: <Settings className="h-5 w-5" /> },
+    { name: '系统报告', path: '/settings', icon: <Settings className="h-5 w-5" /> },
   ];
   
   const toggleMenu = () => {
