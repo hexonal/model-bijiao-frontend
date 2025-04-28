@@ -4,20 +4,19 @@ import { Save, ArrowLeft } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import Select from '../../components/ui/Select';
 import TextArea from '../../components/ui/TextArea';
 import { testCaseApi } from '../../services/api';
-import { TestCase, TestCategory } from '../../types';
+import { TestCase } from '../../types';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 
 interface TestCaseFormData {
   category: string;
-  type: string;
-  name: string;
-  content: string;
-  expected_behavior: string;
-  description?: string;
+  method: string;
+  prompt: string;
+  expected_response: string;
+  max_tokens: number;
+  temperature: number;
 }
 
 const TestCaseForm: React.FC = () => {
@@ -26,35 +25,17 @@ const TestCaseForm: React.FC = () => {
   const isEditMode = Boolean(id);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(isEditMode);
-  const [categories, setCategories] = useState<TestCategory[]>([]);
-  const [testTypes, setTestTypes] = useState<string[]>([]);
   
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<TestCaseFormData>({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<TestCaseFormData>({
     defaultValues: {
-      category: '',
-      type: '',
-      name: '',
-      content: '',
-      expected_behavior: '',
-      description: ''
+      category: 'values',
+      method: 'single',
+      prompt: '',
+      expected_response: '',
+      max_tokens: 2000,
+      temperature: 0.7
     }
   });
-
-  const selectedCategory = watch('category');
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const data = await testCaseApi.getCategories();
-        setCategories(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-        setCategories([]);
-      }
-    };
-
-    fetchCategories();
-  }, []);
 
   useEffect(() => {
     const fetchTestCase = async () => {
@@ -64,11 +45,11 @@ const TestCaseForm: React.FC = () => {
         setIsFetching(true);
         const testCase = await testCaseApi.getById(Number(id));
         setValue('category', testCase.category);
-        setValue('type', testCase.type);
-        setValue('name', testCase.name);
-        setValue('content', testCase.content);
-        setValue('expected_behavior', testCase.expected_behavior);
-        setValue('description', testCase.description || '');
+        setValue('method', testCase.method);
+        setValue('prompt', testCase.prompt);
+        setValue('expected_response', testCase.expected_response);
+        setValue('max_tokens', testCase.max_tokens);
+        setValue('temperature', testCase.temperature);
       } catch (error) {
         toast.error('获取测试用例详情失败');
         console.error('Error fetching test case:', error);
@@ -82,24 +63,6 @@ const TestCaseForm: React.FC = () => {
       fetchTestCase();
     }
   }, [id, isEditMode, navigate, setValue]);
-
-  useEffect(() => {
-    if (selectedCategory) {
-      const fetchTestTypes = async () => {
-        try {
-          const types = await testCaseApi.getTestTypes(selectedCategory);
-          setTestTypes(Array.isArray(types) ? types : []);
-        } catch (error) {
-          console.error('Error fetching test types:', error);
-          setTestTypes([]);
-        }
-      };
-      
-      fetchTestTypes();
-    } else {
-      setTestTypes([]);
-    }
-  }, [selectedCategory]);
 
   const onSubmit = async (data: TestCaseFormData) => {
     try {
@@ -157,66 +120,55 @@ const TestCaseForm: React.FC = () => {
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Select
-                label="测试类别"
-                options={[
-                  { value: '', label: '选择测试类别' },
-                  ...categories.map(cat => ({ value: cat.key, label: cat.name }))
-                ]}
-                helperText="选择测试用例的类别"
-                error={errors.category?.message}
-                {...register('category', { required: '请选择测试类别' })}
-              />
-              
-              <Select
-                label="测试类型"
-                options={[
-                  { value: '', label: '选择测试类型' },
-                  ...testTypes.map(type => ({ value: type, label: type }))
-                ]}
-                helperText="选择测试类型"
-                error={errors.type?.message}
-                {...register('type', { required: '请选择测试类型' })}
-              />
-            </div>
-            
-            <Input
-              label="测试名称"
-              placeholder="输入测试用例名称"
-              helperText="简洁描述测试目的"
-              error={errors.name?.message}
-              {...register('name', { 
-                required: '请输入测试名称',
-                maxLength: { value: 100, message: '名称不能超过100个字符' }
-              })}
-            />
-            
             <TextArea
-              label="测试内容"
+              label="提示词"
               placeholder="输入要发送给模型的提示..."
               rows={4}
               helperText="此内容将被发送给模型进行测试"
-              error={errors.content?.message}
-              {...register('content', { required: '请输入测试内容' })}
+              error={errors.prompt?.message}
+              {...register('prompt', { required: '请输入提示词' })}
             />
             
             <TextArea
-              label="预期行为"
+              label="预期响应"
               placeholder="描述模型应该如何响应..."
               rows={4}
               helperText="描述模型的期望响应方式"
-              error={errors.expected_behavior?.message}
-              {...register('expected_behavior', { required: '请输入预期行为' })}
+              error={errors.expected_response?.message}
+              {...register('expected_response', { required: '请输入预期响应' })}
             />
             
-            <TextArea
-              label="描述"
-              placeholder="输入测试用例的其他信息（可选）"
-              rows={3}
-              helperText="提供额外的测试用例上下文或说明"
-              {...register('description')}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                type="number"
+                label="最大Token数"
+                step="1"
+                min="1"
+                helperText="模型输出的最大Token限制"
+                error={errors.max_tokens?.message}
+                {...register('max_tokens', { 
+                  required: '请输入最大Token数',
+                  min: { value: 1, message: 'Token数不能小于1' },
+                  valueAsNumber: true
+                })}
+              />
+              
+              <Input
+                type="number"
+                label="温度参数"
+                step="0.1"
+                min="0"
+                max="2"
+                helperText="控制输出随机性，推荐范围：0.0-1.0"
+                error={errors.temperature?.message}
+                {...register('temperature', { 
+                  required: '请输入温度参数',
+                  min: { value: 0, message: '温度不能小于0' },
+                  max: { value: 2, message: '温度不能大于2' },
+                  valueAsNumber: true
+                })}
+              />
+            </div>
           </CardContent>
           <CardFooter className="flex justify-end space-x-4">
             <Button
