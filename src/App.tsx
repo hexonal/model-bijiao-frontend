@@ -39,6 +39,9 @@ function App() {
           {/* Tasks */}
           <Route path="tasks" element={<TaskList />} />
           
+          {/* Settings */}
+          <Route path="settings" element={<ModelList />} />
+          
           {/* Fallback route */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
