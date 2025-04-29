@@ -10,7 +10,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'https://api-frp.ipv4.name',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       }
